@@ -38,8 +38,21 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
 
-# Copy assets next to executable
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
-)
+# MSVC по умолчанию считает исходники Windows-1251, из-за чего русские строки
+# в UTF-8 ломаются. /utf-8 = исходник и runtime-кодировка узких строк — UTF-8.
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+endif()
+
+# Копируем ресурсы (шрифт и т.п.) рядом с .exe при каждой сборке.
+# Вложенный if + file(GLOB) — чтобы не падать, если assets/ ещё пустая
+# (CMake 4.x ругается на copy_directory с пустым источником).
+file(GLOB ASSET_FILES "${CMAKE_SOURCE_DIR}/assets/*")
+if(ASSET_FILES)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+    )
+endif()
