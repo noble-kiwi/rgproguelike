@@ -59,39 +59,35 @@
 Управление памятью: RAII + `std::unique_ptr` для полиморфных врагов,
 `std::vector` для коллекций.
 
-## Сборка
+## Сборка (Windows)
 
 Требования:
-- C++17
+- Windows 10 / 11
 - CMake 3.16+
-- Компилятор: GCC / Clang / MSVC
+- Visual Studio 2019/2022 с компонентом «Desktop development with C++» (MSVC)
 
-SFML загружается автоматически через CMake FetchContent (не требует
-предустановленной библиотеки).
+SFML 2.6.1 подтягивается автоматически через CMake FetchContent и линкуется
+статически — никаких отдельных `.dll` рядом с `.exe` класть не нужно.
 
-### Linux / macOS
+### Сборка из командной строки (Developer Command Prompt for VS)
 
-```bash
-cmake -S . -B build
-cmake --build build -j
-./build/RPG_Roguelike
-```
-
-### Windows (MSVC)
-
-```bash
+```bat
 cmake -S . -B build
 cmake --build build --config Release
 build\Release\RPG_Roguelike.exe
 ```
 
-### Windows (MinGW)
+### Сборка в Visual Studio
 
-```bash
-cmake -S . -B build -G "MinGW Makefiles"
-cmake --build build
-build\RPG_Roguelike.exe
-```
+1. Открыть папку проекта через «Open a local folder».
+2. VS сам обнаружит `CMakeLists.txt` и сгенерирует конфигурацию.
+3. Выбрать конфигурацию `x64-Release` и запустить цель `RPG_Roguelike`.
+
+### Сборка в CLion
+
+1. Открыть папку как CMake-проект.
+2. Toolchain — «Visual Studio» (amd64).
+3. Профиль — `Release`, запустить `RPG_Roguelike`.
 
 ## Структура проекта
 
@@ -109,23 +105,27 @@ rgp-roguelike/
 │   ├── Room.{h,cpp}         # комната (тайловая сетка)
 │   ├── Level.{h,cpp}        # этаж (граф комнат, генерация)
 │   ├── HUD.{h,cpp}          # HUD
-│   └── AssetManager.{h,cpp} # ресурсы (шрифты)
-├── assets/                  # место для ресурсов (шрифты, PNG, звуки)
+│   ├── AssetManager.{h,cpp} # ресурсы (шрифты)
+│   └── Utf.h                # хелпер для UTF-8 строк (sf::String)
+├── assets/                  # место для шрифта (font.ttf)
 ├── highscore.txt            # создаётся при первом сохранении рекорда
 └── README.md
 ```
 
 ## Ресурсы (шрифты)
 
-`AssetManager` пробует загрузить шрифт по очереди из нескольких путей:
+Положите файл `font.ttf` в папку `assets/`. Рекомендуется шрифт с поддержкой
+кириллицы — например, [DejaVu Sans](https://dejavu-fonts.github.io/) или
+[Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) (переименовать в
+`font.ttf`).
 
-1. `assets/font.ttf` (рекомендуется положить свой)
-2. Системные шрифты Windows (`C:/Windows/Fonts/arial.ttf`, `segoeui.ttf`)
-3. Системные шрифты macOS (`/System/Library/Fonts/Helvetica.ttc`)
-4. Системные шрифты Linux (`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`)
+`AssetManager` ищет шрифт по путям:
 
-Если ни один шрифт не найден — игра запустится, но текст HUD / меню
-отображаться не будет.
+1. `assets/font.ttf` (рядом с `.exe` — CMake сам копирует папку после сборки)
+2. `../assets/font.ttf` (если запуск идёт из подпапки `build/Release/`)
+
+Если шрифт не найден — игра запустится, но текст HUD и меню не будет
+отображаться.
 
 ## Соответствие ТЗ
 
