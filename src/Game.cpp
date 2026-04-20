@@ -256,20 +256,63 @@ void Game::updatePlaying(float dt)
     for (auto& e : m_Enemies)
     {
         if (!e->isAlive()) continue;
-        e->update(dt, m_Player.getPosition(), m_Projectiles);
+        e->update(dt, m_Player.getPosition(), m_Projectiles, m_Room);
 
         // Удержать в пределах комнаты
         sf::Vector2f p = e->getPosition();
-        float margin = 40.f;
+        float margin = e->getRadius();
         p.x = std::clamp(p.x, margin,
-                         static_cast<float>(Room::GRID_WIDTH * Room::TILE_SIZE) - margin);
+            static_cast<float>(Room::GRID_WIDTH * Room::TILE_SIZE) - margin);
         p.y = std::clamp(p.y, margin,
-                         static_cast<float>(Room::GRID_HEIGHT * Room::TILE_SIZE) - margin);
+            static_cast<float>(Room::GRID_HEIGHT * Room::TILE_SIZE) - margin);
         e->setPosition(p);
+    }
+
+    const int COLLISION_ITERATIONS = 3;
+    for (int iter = 0; iter < COLLISION_ITERATIONS; ++iter) {
+        for (size_t i = 0; i < m_Enemies.size(); ++i) {
+            if (!m_Enemies[i]->isAlive()) continue;
+            sf::Vector2f pos1 = m_Enemies[i]->getPosition();
+            float r1 = m_Enemies[i]->getRadius();
+
+            for (size_t j = i + 1; j < m_Enemies.size(); ++j) {
+                if (!m_Enemies[j]->isAlive()) continue;
+                sf::Vector2f pos2 = m_Enemies[j]->getPosition();
+                float r2 = m_Enemies[j]->getRadius();
+
+                sf::Vector2f delta = pos2 - pos1;
+                float distSq = delta.x * delta.x + delta.y * delta.y;
+                float minDist = r1 + r2;
+
+                if (distSq < minDist * minDist && distSq > 0.001f) {
+                    float dist = std::sqrt(distSq);
+                    sf::Vector2f normal = delta / dist;
+                    float overlap = minDist - dist;
+
+                    // Смещаем обоих врагов в противоположные стороны
+                    sf::Vector2f correction = normal * (overlap * 0.5f);
+                    m_Enemies[i]->setPosition(pos1 - correction);
+                    m_Enemies[j]->setPosition(pos2 + correction);
+                }
+            }
+        }
     }
 
     // Обновление снарядов
     for (auto& p : m_Projectiles) p.update(dt);
+
+    // Коллизия снарядов (чтобы в стены врезались)
+    for (auto& proj : m_Projectiles) {
+        if (proj.isDead()) continue;
+
+        sf::FloatRect bounds = proj.getBounds();
+        if (m_Room.isSolid(bounds.left, bounds.top, false) ||
+            m_Room.isSolid(bounds.left + bounds.width, bounds.top, false) ||
+            m_Room.isSolid(bounds.left, bounds.top + bounds.height, false) ||
+            m_Room.isSolid(bounds.left + bounds.width, bounds.top + bounds.height, false)) {
+            proj.kill();
+        }
+    }
 
     // Коллизии снарядов
     sf::FloatRect pb = m_Player.getBounds();
