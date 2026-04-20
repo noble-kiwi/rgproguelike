@@ -271,19 +271,19 @@ void Game::updatePlaying(float dt)
     // Обновление снарядов
     for (auto& p : m_Projectiles) p.update(dt);
 
-    // Коллизия снарядов (шоб в стены врезались)
+    // Коллизия снарядов (чтобы в стены врезались)
     for (auto& proj : m_Projectiles) {
         if (proj.isDead()) continue;
-    
+
         sf::FloatRect bounds = proj.getBounds();
         if (m_Room.isSolid(bounds.left, bounds.top, false) ||
             m_Room.isSolid(bounds.left + bounds.width, bounds.top, false) ||
             m_Room.isSolid(bounds.left, bounds.top + bounds.height, false) ||
             m_Room.isSolid(bounds.left + bounds.width, bounds.top + bounds.height, false)) {
             proj.kill();
-         }
+        }
     }
-    
+
     // Коллизии снарядов
     sf::FloatRect pb = m_Player.getBounds();
     for (auto& proj : m_Projectiles)
